@@ -1,4 +1,4 @@
-# Sistema de Optimización de Interfaces Móviles)
+# Sistema de Optimización de Interfaces Móviles
 
 ### Implementación del cronograma base basado en Proyecto.tex
 **Objetivo:** Desarrollar el SDK de análisis de interacción y su persistencia local.
