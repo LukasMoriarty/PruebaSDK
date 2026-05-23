@@ -1,6 +1,6 @@
 # Sistema de Optimización de Interfaces Móviles)
 
-### Petición 1: Implementación del cronograma base basado en Proyecto.tex
+### Implementación del cronograma base basado en Proyecto.tex
 **Objetivo:** Desarrollar el SDK de análisis de interacción y su persistencia local.
 
 **Cambios realizados:**
