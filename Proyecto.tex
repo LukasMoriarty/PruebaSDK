@@ -1,0 +1,278 @@
+%% 
+%% Copyright 2007-2025 Elsevier Ltd
+%% 
+%% This file is part of the 'Elsarticle Bundle'.
+%% ---------------------------------------------
+\documentclass[final,3p,times]{elsarticle}
+
+%% The amssymb package provides various useful mathematical symbols
+\usepackage{amssymb}
+%% The amsmath package provides various useful equation environments.
+\usepackage{amsmath}
+\usepackage{float}
+\usepackage{subcaption}
+\usepackage{tabularx}
+\usepackage{booktabs} % Necesario para las lineas de las tablas
+\journal{Computers in Biology and Medicine}
+
+% 1. Paquete necesario para los colores
+\usepackage[dvipsnames]{xcolor} 
+\usepackage{hyperref}
+\usepackage{xurl}
+\usepackage{graphicx}
+
+% Paquete para dar formato al código fuente
+\usepackage{listings}
+\renewcommand{\lstlistingname}{Código}
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+\lstset{style=mystyle}
+
+% 2. Define aquí los colores que usas en tus gráficos
+\definecolor{NCR}{HTML}{0000FF}
+\definecolor{Edema}{HTML}{00FF00}   
+\definecolor{ET}{HTML}{FF0000}     
+
+\begin{document}
+
+\begin{frontmatter}
+
+%% Title, authors and addresses
+\title{Proyecto Final: Sistema de integración en aplicaciones móviles para la optimización de interfaces mediante análisis de interacción}
+
+\author[a]{Luis Carlos Zepeda Avila}
+
+\affiliation[a]{organization={Universidad Autónoma de Baja California},
+            city={Tijuana},
+            state={Baja California},
+            country={México}}
+
+\end{frontmatter}
+
+    \item \textbf{Objetivos Específicos:}
+    \begin{itemize}
+        \item El sistema mostrará cuántas interacciones realizo con los apartados interactivos.
+        \item Mediante la entrada del usuario (clic), el sistema guardará la información en registros acumulables de clics y, una vez a la semana, enviaré dichos registros para su posterior análisis.
+        \item Optimizar la experiencia de usuario (UX) de aplicaciones móviles, reduciendo el número promedio de interacciones (clics) requeridas para completar tareas clave.
+    \end{itemize}
+\end{itemize}
+
+\vspace{0.5cm}
+\noindent\textbf{Justificación:} \\
+El principal desafío en el desarrollo de aplicaciones móviles es el espacio. Si no poseo experiencia o recursos en el diseño de interfaces, el riesgo de crear una interfaz ``sucia'' (poco clara o desordenada) para el usuario se incrementa notablemente. Para abordar esto, ofreceré una alternativa más eficiente para el análisis de la interfaz. Esto me permitirá modificarla con un objetivo concreto: reducir la cantidad de clics que los usuarios deben realizar en la aplicación.
+
+\vspace{0.5cm}
+\noindent\textbf{Hipótesis:} \\
+El objetivo de implementar un sistema de recolección de clics es analizar y optimizar las interfaces de usuario. Esto me permitirá modificar las interfaces gráficas en aplicaciones móviles, logrando que las tareas clave requieran un 15\% menos de clics.
+
+\vspace{0.5cm}
+\noindent\textbf{Alcance y Límites del Sistema:}
+\begin{itemize}
+    \item El sistema estará disponible para múltiples desarrolladores.
+    \item El sistema solo estará disponible para aplicaciones Android.
+    \item El sistema será gratuito para proyectos manejados por un personal menor a cinco personas.
+    \item El sistema no deberá ser visible para el usuario común ni intervenir en su uso.
+    \item Por motivos de seguridad y privacidad, preguntaré al usuario al inicio de sesión si está de acuerdo con la recopilación de dichos datos; se podrá configurar manualmente en caso de cambiar de opinión.
+    \item El sistema no tomará decisiones propias para la modificación de la interfaz.
+    \item El sistema no sugerirá modificaciones de la interfaz directamente.
+\end{itemize}
+
+\vspace{0.5cm}
+\noindent\textbf{Selección de Tecnología:}
+\begin{itemize}
+    \item \textbf{Lado del cliente:} Utilizaré Kotlin como lenguaje de programación. Para red, evalué Retrofit o Ktor Cliente para el envío de eventos. No rastrearé solo el ``clic'', capturaré el View ID, Timestamp, Activity/Fragment y las coordenadas X,Y.
+    \item \textbf{Ingesta y backend (Planeación inicial):} Go o Node.js. Message Broker: Apache Kafka o RabbitMQ.
+    \item \textbf{Almacenamiento y Análisis (Planeación inicial):} Base de datos OLAP: ClickHouse. Visualización: Grafana o Apache Superset. \textit{(Nota: Estas tecnologías fueron ajustadas en la Etapa 3 por viabilidad técnica).}
+\end{itemize}
+
+\section{Etapa 2: Definición Metodológica}
+
+\subsection{Parte 1: Descripción del Sistema}
+
+El sistema opera como un ecosistema donde la información fluye desde el dispositivo del usuario final hasta un panel de toma de decisiones.
+
+\begin{itemize}
+    \item \textbf{Procesos Lineales:} El flujo de Ingesta de Datos. El evento nace en el clic del usuario, pasa por el SDK (Kotlin), se envía vía API, llega al Backend y se deposita en la base de datos. Cada paso depende estrictamente del anterior.
+    \item \textbf{Procesos Paralelos:} La Recolección Multiusuario. Múltiples dispositivos capturan y envían eventos de forma simultánea e independiente. Asimismo, mientras el sistema ingesta nuevos datos, el servidor de visualización puede estar procesando consultas analíticas en paralelo.
+    \item \textbf{Procesos Iterativos:} El Ciclo de Optimización UX. Una vez que analizo los resultados, propongo cambios en la interfaz, los implemento y el proceso de medición vuelve a comenzar para validar si la métrica de clics mejoró.
+    \item \textbf{Anidamiento:} Existe anidamiento en el proceso de Transmisión de Datos, ya que dentro de este ejecuto sub-procedimientos de autenticación y validación de conexión antes de liberar el paquete de datos.
+\end{itemize}
+
+\vspace{0.5cm}
+\noindent\textbf{Representación Gráfica y Jerárquica}
+
+\begin{itemize}
+    \item \textbf{Sistema:} Sistema de Optimización de Interfaces Móviles (SOIM).
+    \item \textbf{Procesos:} Recolección y captura de Eventos, Ingesta y Distribución de Mensajes, Almacenamiento y Análisis de Datos, Visualización de Mapas de Interacción.
+    \item \textbf{Procedimientos:} Registro de coordenadas X,Y; Batching; Autenticación del SDK; Query de agregación.
+    \item \textbf{Métodos:} Algoritmo de densidad de puntos (para Heatmaps); Protocolo de comunicación asíncrona.
+    \item \textbf{Modelo Final:} Interfaz Móvil Optimizada (Propuesta de Rediseño basada en datos).
+\end{itemize}
+
+\vspace{0.5cm}
+\noindent\textbf{Definición de Procesos Clave}
+
+\textbf{Proceso A: Ingesta de Eventos en Tiempo Real}
+\begin{itemize}
+    \item \textbf{Entradas:} Eventos de interacción (clics), View ID, Coordenadas X,Y, Timestamp.
+    \item \textbf{Actividades/Tareas:} Captura del evento, empaquetado en formato JSON, envío al broker, validación de esquema.
+    \item \textbf{Salidas:} Registro confirmado en la base de datos analítica.
+    \item \textbf{Recursos:} Conexión a internet, SDK en Kotlin, Servidor en la nube.
+    \item \textbf{Controles/Reglas:} Solo envío datos si el usuario aceptó el aviso de privacidad; envío lotes bajo conexión Wi-Fi (regla opcional).
+    \item \textbf{Indicadores:} Tasa de eventos por segundo (EPS), Latencia de ingesta (ms).
+\end{itemize}
+
+\textbf{Proceso B: Generación de Mapas de Calor (Análisis)}
+\begin{itemize}
+    \item \textbf{Entradas:} Datos históricos de clics acumulados.
+    \item \textbf{Actividades/Tareas:} Ejecución de consultas SQL agregadas, cálculo de densidad de coordenadas, renderizado de capas visuales sobre capturas de pantalla de la App.
+    \item \textbf{Salidas:} Mapa de calor visual (Heatmap), Reporte de flujo de usuario.
+    \item \textbf{Recursos:} Motor de análisis, Herramientas de visualización.
+    \item \textbf{Controles/Reglas:} El análisis debe filtrarse por versión de la aplicación y tipo de dispositivo.
+    \item \textbf{Indicadores:} Porcentaje de reducción de clics en tareas clave, Tiempo promedio de análisis de reporte.
+\end{itemize}
+
+\subsection{Parte 2: Metodología y Objetivos}
+
+\textbf{Metodología para alcanzar los objetivos planteados:}
+\begin{itemize}
+    \item \textbf{Objetivo 1 (Capturar interacciones):} Desarrollaré un SDK ligero en Kotlin. Se integrará en la aplicación móvil para registrar de forma global los eventos onClick. Capturaré View ID, X, Y y Timestamp, almacenándolos en un buffer local.
+    \item \textbf{Objetivo 2 (Ingesta y almacenamiento):} Implementaré una arquitectura orientada a eventos, garantizando rendimiento óptimo en la escritura de los registros.
+    \item \textbf{Objetivo 3 (Análisis de UX):} Conectaré la base de datos a una herramienta de visualización para generar Heatmaps. Esto me revelará las zonas de mayor y menor interacción para iterar el diseño con evidencia empírica.
+\end{itemize}
+
+\textbf{Resultados previstos:}
+\begin{itemize}
+    \item Un SDK funcional en Kotlin, capaz de integrarse de manera sencilla.
+    \item Un backend preparado para recibir telemetría.
+    \item Un dashboard interactivo para visualizar los mapas de calor.
+    \item Datos que me permitan justificar cambios en las interfaces, reduciendo el esfuerzo cognitivo y físico del usuario.
+\end{itemize}
+
+\textbf{Asignaturas de la carrera aplicadas:}
+\begin{itemize}
+    \item \textbf{Análisis y Diseño de Software:} Levantamiento de requerimientos, diseño de arquitectura y gestión del proyecto.
+    \item \textbf{Lenguajes de Programación Orientados a Objetos:} Uso de Kotlin y Java para la lógica del sistema.
+    \item \textbf{Aplicaciones Móviles:} Uso intensivo de Android Studio y el SDK de Android.
+    \item \textbf{Interacción Humano-Computadora (IHC):} Fundamentos de usabilidad y métricas de UX.
+\end{itemize}
+
+\subsection{Parte 3: Cronograma de Actividades (Inicial)}
+
+\begin{table}[H]
+    \centering
+    \caption{Cronograma inicial planteado en la Etapa 2}
+    \begin{tabularx}{\textwidth}{llX}
+        \toprule
+        \textbf{Fecha} & \textbf{Día} & \textbf{Actividad} \\
+        \midrule
+        21 de Abr & Martes & Definición de la estructura de la base de datos (Tablas de Clics). \\
+        27 de Abr & Lunes & Crear el servidor básico en Python (Flask) que reciba datos. \\
+        28 de Abr & Martes & Configurar la conexión con SQLite para guardar los clics. \\
+        04 de May & Lunes & Modificar la App Android para que envíe el ID del botón al servidor. \\
+        05 de May & Martes & Pruebas de envío: Presionar botones en el cel y verlos en BD. \\
+        11 de May & Lunes & Crear script de Python para gráfica de "Botones más usados". \\
+        12 de May & Martes & Generación de mapas de calor visuales. \\
+        18 de May & Lunes & Análisis de resultados y propuesta de reubicación de botones. \\
+        19 de May & Martes & Redacción del reporte final y preparación de capturas de pantalla. \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+\section{Etapa 3: Desarrollo e Implementación}
+
+\subsection{Informe de Logros vs Cronograma Inicial}
+He realizado la primera implementación del código en Kotlin para gestionar la actividad principal del usuario, esto representa la primera etapa del proyecto en el cronograma original. Sin embargo, al enfrentarme a la tecnología real, identifiqué que varias propuestas iniciales estaban fuera de mi alcance temporal y técnico actual. 
+
+\subsection{Desafíos y Ajustes al Proyecto}
+Actualmente estoy descubriendo y comprendiendo las capacidades del entorno (Android Studio). Al inicio me pareció abrumador ya que no contaba con conocimiento previo exhaustivo en el desarrollo nativo de aplicaciones móviles. 
+
+\textbf{Soluciones aplicadas:}
+\begin{itemize}
+    \item El desarrollo e implementación de una API externa compleja y el uso de un Message Broker fueron reemplazados por una persistencia de datos local creando una base de datos SQLite directamente en el dispositivo.
+    \item Descarté el uso de Grafana; en su lugar, agregaré un ``Modo Administrador'' dentro de la misma aplicación para poder visualizar los mapas de calor superpuestos en la pantalla original desde el propio teléfono.
+\end{itemize}
+
+Aunque mis expectativas técnicas iniciales para la infraestructura bajaron, estoy convencido de que puedo implementar esta versión más sencilla y autocontenida que cumple perfectamente con el propósito central: optimizar interfaces mediante el análisis de clics.
+
+\newpage
+
+\subsection{Preparación del Entorno y Desarrollo del Proceso Central}
+He preparado mi entorno de desarrollo utilizando Android Studio con el lenguaje Kotlin. Como prueba de concepto inicial, generé el script funcional que habilita la vista principal \textit{Edge-to-Edge}, sentando las bases para capturar las coordenadas de la pantalla completa (necesario para el Heatmap).
+
+\begin{lstlisting}[language=Java, caption=Prueba de concepto: Configuración inicial de la Actividad (MainActivity.kt)]
+package com.example.pruebasdk
+
+import android.os.Bundle
+import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+
+class MainActivity : AppCompatActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
+        setContentView(R.layout.activity_main)
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
+            insets
+        }
+    }
+}
+\end{lstlisting}
+
+\begin{figure}[H] 
+    \centering
+    \includegraphics[width=1.0\textwidth]{androidstudio.png}
+    
+    \caption{Capturado en Android Studio}
+    \label{fig:captura_main_activity}
+\end{figure}
+
+\newpage
+
+\subsection{Nuevo Cronograma de Actividades (Ajustado)}
+Debido a los desafíos técnicos, hemos propuesto un nuevo cronograma enfocado en el desarrollo del SDK local (iniciando el 4 de mayo de 2026):
+
+\begin{table}[H]
+    \centering
+    \caption{Cronograma ajustado para desarrollo en entorno local}
+    \begin{tabularx}{\textwidth}{lX}
+        \toprule
+        \textbf{Día} & \textbf{Actividad} \\
+        \midrule
+        \textbf{Día 1} & \textbf{Configuración y Captura Base (SDK):} Creación del módulo en Kotlin e implementación del \textit{OnTouchListener} global para detectar eventos (clics). \\
+        \textbf{Día 2} & \textbf{Lógica de Coordenadas:} Captura de View ID, X, Y y Timestamp. Lógica para identificar la pantalla actual. \\
+        \textbf{Día 3} & \textbf{Persistencia de Datos:} Creación de base de datos SQLite interna con auto-guardado cada 5 interacciones. \\
+        \textbf{Día 4} & \textbf{Desarrollo de App de Prueba:} Crear interfaz sencilla con botones dispersos para validar la captura de coordenadas. \\
+        \textbf{Día 5} & \textbf{Procesamiento de Densidad:} Algoritmo simple de agrupación (clustering) leyendo los datos de SQLite local. \\
+        \textbf{Día 6} & \textbf{Visualización (Heatmap Local):} Crear Modo Admin en la app que pinte círculos de colores sobre la interfaz según la densidad de clics. \\
+        \textbf{Día 7} & \textbf{Pruebas Finales:} Validar que el SDK no genere latencia. Exportación a CSV de los datos recolectados. \\
+        \bottomrule
+    \end{tabularx}
+\end{table}
+
+\end{document}

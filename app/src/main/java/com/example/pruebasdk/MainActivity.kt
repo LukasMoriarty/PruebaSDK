@@ -2,9 +2,13 @@ package com.example.pruebasdk
 
 import android.os.Bundle
 import android.widget.Button
+import android.widget.Toast
 import android.widget.TextView
+import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import com.example.pruebasdk.SoimSDK
 
 // =============================================================================
@@ -35,9 +39,18 @@ import com.example.pruebasdk.SoimSDK
  */
 class MainActivity : AppCompatActivity() {
 
+    private var heatmapView: HeatmapView? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         setContentView(R.layout.activity_main)
+
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
+            insets
+        }
 
         // ── INTEGRACIÓN DEL SDK (DÍA 1) ──────────────────────────────────────
         //
@@ -77,6 +90,96 @@ class MainActivity : AppCompatActivity() {
         //                           | (542.0, 1203.5) | pantalla='MainActivity'
         //
         // No se requiere ningún código adicional en los Views o Fragments.
+
+        // ── CONFIGURACIÓN DE BOTONES DE PRUEBA ───────────────────────────────
+        setupTestButtons()
+    }
+
+    private fun setupTestButtons() {
+        val showToast = { msg: String -> Toast.makeText(this, msg, Toast.LENGTH_SHORT).show() }
+
+        findViewById<Button>(R.id.btn_top_left).setOnClickListener { showToast("Clic en Perfil") }
+        findViewById<Button>(R.id.btn_top_right).setOnClickListener { showToast("Clic en Ajustes") }
+        findViewById<Button>(R.id.btn_center).setOnClickListener { showToast("Clic en Comprar") }
+        findViewById<Button>(R.id.btn_bottom_left).setOnClickListener { showToast("Clic en Favoritos") }
+        findViewById<Button>(R.id.btn_bottom_right).setOnClickListener { showToast("Clic en Carrito") }
+
+        findViewById<Button>(R.id.btn_admin).setOnClickListener {
+            toggleAdminMode()
+        }
+
+        findViewById<Button>(R.id.btn_export).setOnClickListener {
+            CsvExporter.exportAndShareCsv(this)
+        }
+
+        findViewById<Button>(R.id.btn_clear).setOnClickListener {
+            android.app.AlertDialog.Builder(this)
+                .setTitle("Borrar datos")
+                .setMessage("¿Quiere borrar todos los datos guardados?")
+                .setPositiveButton("Confirmar") { _, _ ->
+                    SoimSDK.dbHelper?.clearAllEvents()
+                    Toast.makeText(this, "Datos borrados", Toast.LENGTH_SHORT).show()
+                    
+                    // Si el heatmap está activo, lo quitamos para limpiar la pantalla
+                    if (heatmapView != null) {
+                        findViewById<ConstraintLayout>(R.id.main).removeView(heatmapView)
+                        heatmapView = null
+                    }
+                }
+                .setNegativeButton("Cancelar", null)
+                .show()
+        }
+    }
+
+    private fun toggleAdminMode() {
+        try {
+            val rootLayout = findViewById<ConstraintLayout>(R.id.main)
+
+            if (heatmapView != null) {
+                // Si ya está activo, lo quitamos
+                rootLayout.removeView(heatmapView)
+                heatmapView = null
+                Toast.makeText(this, "Modo Admin desactivado", Toast.LENGTH_SHORT).show()
+                return
+            }
+
+            // Forzamos flush para tener los últimos eventos
+            SoimSDK.flushBuffer()
+
+            // Obtenemos los eventos de la base de datos para esta pantalla
+            val events = SoimSDK.dbHelper?.getEventsByScreen(this.javaClass.simpleName) ?: emptyList()
+
+            if (events.isEmpty()) {
+                Toast.makeText(this, "No hay datos para mostrar en esta pantalla", Toast.LENGTH_SHORT).show()
+                return
+            }
+
+            // Procesamos la densidad
+            val processor = HeatmapProcessor()
+            val heatmapPoints = processor.processDensity(events)
+
+            // Creamos y añadimos la vista
+            heatmapView = HeatmapView(this, heatmapPoints).apply {
+                // Evitamos que el Heatmap consuma toques (para poder seguir interactuando con botones de abajo)
+                isClickable = false
+                isFocusable = false
+            }
+            
+            // Lo añadimos por encima de todo
+            rootLayout.addView(heatmapView, ConstraintLayout.LayoutParams(
+                ConstraintLayout.LayoutParams.MATCH_PARENT,
+                ConstraintLayout.LayoutParams.MATCH_PARENT
+            ))
+
+            Toast.makeText(this, "Modo Admin activado: Mostrando " + events.size + " clics", Toast.LENGTH_SHORT).show()
+        } catch (e: Throwable) {
+            e.printStackTrace()
+            android.app.AlertDialog.Builder(this)
+                .setTitle("Crash Detectado")
+                .setMessage(e.stackTraceToString())
+                .setPositiveButton("OK", null)
+                .show()
+        }
     }
 
     override fun onStop() {

@@ -99,6 +99,11 @@ object SoimSDK {
     private var activityTracker: SoimActivityTracker? = null
 
     /**
+     * Helper de la base de datos local para persistir eventos.
+     */
+    internal var dbHelper: SoimDatabaseHelper? = null
+
+    /**
      * Identificador único de la sesión actual.
      * Se genera al inicializar el SDK y persiste durante toda la vida
      * del proceso de la app. Agrupa todos los eventos de una misma
@@ -123,7 +128,7 @@ object SoimSDK {
     private val eventBuffer = mutableListOf<ClickEvent>()
 
     // Límite máximo de eventos en el buffer antes de forzar un flush
-    private const val MAX_BUFFER_SIZE = 50
+    private const val MAX_BUFFER_SIZE = 5
 
     // ─────────────────────────────────────────────────────────────────────────
     // API PÚBLICA: métodos que usa la app anfitriona
@@ -151,6 +156,9 @@ object SoimSDK {
 
         // Generamos el identificador único de sesión
         sessionId = UUID.randomUUID().toString()
+
+        // Inicializamos la base de datos local
+        dbHelper = SoimDatabaseHelper(application)
 
         // Creamos el tracker de pantallas (DÍA 2)
         activityTracker = SoimActivityTracker()
@@ -267,6 +275,9 @@ object SoimSDK {
             // TODO (Día 3): Aquí va el envío real vía Retrofit
             // val request = BatchEventRequest(sessionId, eventBuffer.toList())
             // apiService.sendEvents(request)
+            
+            // DÍA 3: Guardar en SQLite local
+            dbHelper?.insertEvents(eventBuffer.toList())
 
             eventBuffer.clear()
         }
