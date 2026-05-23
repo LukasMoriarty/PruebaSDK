@@ -1,4 +1,4 @@
-# Historial de Desarrollo: SOIM SDK (Sistema de Optimización de Interfaces Móviles)
+# Sistema de Optimización de Interfaces Móviles)
 
 Este documento resume el progreso completo y todos los cambios técnicos implementados en el proyecto, documentados cronológicamente según las peticiones realizadas.
 
